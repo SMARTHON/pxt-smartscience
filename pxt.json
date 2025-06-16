@@ -1,6 +1,6 @@
 {
-    "name": "AdvancedModule",
-    "version": "1.1",
+    "name": "ScienceModule",
+    "version": "2.2",
     "description": "This is the Module extension for SMARTHON IoT:bit in PXT",
     "license": "MIT",
     "dependencies": {
