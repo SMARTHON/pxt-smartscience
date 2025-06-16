@@ -1,0 +1,17 @@
+{
+    "name": "AdvancedModule",
+    "version": "0.1",
+    "description": "This is the Module extension for SMARTHON IoT:bit in PXT",
+    "license": "MIT",
+    "dependencies": {
+        "core": "*"
+    },
+    "files": [
+        "README.md",
+        "SmartScience.ts"
+    ],
+    "testFiles": [
+        "tests.ts"
+    ],
+    "public": true
+}
