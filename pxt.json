@@ -4,7 +4,8 @@
     "description": "This is the Module extension for SMARTHON IoT:bit in PXT",
     "license": "MIT",
     "dependencies": {
-        "core": "*"
+        "core": "*",
+        "neopixel": "github:microsoft/pxt-neopixel#v0.7.3"
     },
     "files": [
         "README.md",
