@@ -27,44 +27,6 @@ namespace SmartScience {
         115, 112, 109, 106, 103,   //  80  -  84
         100
     ]
-    // Water
-    //---------------------------------------------------------------------
-    /**
-     * get NTC Temperature
-     * @param pin is ADC pin, eg: AnalogPin.P0
-     */
-    //% blockId="NTCSenor_GET" block="Get water temperature at %pin"
-    //% group="Water"
-    //% weight=90
-    export function ntc_Temperature(pin: AnalogPin): number {
-        let value = pins.analogReadPin(pin) * 3.3 / 5
-        for (let i = 0; i < NTC_table.length; i++) {
-            if (value > NTC_table[i])
-                return i - 40;
-        }
-        return 85;
-    }
-
-    /**
-    * get water level value (0~100)
-    * @param waterlevelpin describe parameter here, eg: AnalogPin.P0
-    */
-    //% group="Water"
-    //% blockId="readWaterLevel" block="value of water level(0~100) at pin %waterlevelpin"
-    //% weight=100
-    export function ReadWaterLevel(waterlevelpin: AnalogPin): number {
-        let voltage = 0;
-        let waterlevel = 0;
-        voltage = pins.map(
-            pins.analogReadPin(waterlevelpin),
-            0,
-            700,
-            0,
-            100
-        );
-        waterlevel = voltage;
-        return Math.round(waterlevel)
-    }
 
     //PH Sensor
     //----------------------------------------------------------------------------
@@ -72,7 +34,8 @@ namespace SmartScience {
     let ph_value = ""
     //% blockId="readPH"
     //% block="Read PH value at %pin"
-    //% weight=80 group="PH Sensor"
+    //% weight=80 
+    //% group="PH"
     export function readPH(pin: AnalogPin): string {
         let sensorarray: number[] = []
         for (let i = 0; i < 10; i++) {
@@ -97,7 +60,7 @@ namespace SmartScience {
     let ph_value_number = 0
     //% blockId="readPHNumber"
     //% block="Read PH value (x100) pin %ports| offset %offset"
-    //% weight=70 group="PH Sensor"
+    //% weight=70 group="PH"
     export function readPhNumber(ports: AnalogPin, offset: number): number {
 
         let temp = 0;
@@ -134,7 +97,8 @@ namespace SmartScience {
       */
 
     //% group="Pm2.5"
-    //% blockId="readLaserDustSensor" //% block="Get %pmType (ug/m3) at I2C"
+    //% blockId="readLaserDustSensor" 
+    //% block="Get %pmType (ug/m3) at I2C"
     //% weight=15
     export function PMdata(pmType: PmMenu): number {
         pins.i2cWriteNumber(PM_ADDR, 0x00, NumberFormat.Int8LE);
@@ -203,7 +167,7 @@ namespace SmartScience {
     * CO2 and TVOC Sensor (CCS811) Start
     */
     //% blockId="indenvStart" block="CCS811 Start"
-    //% group="CO2 and TVOC Sensor (CCS811)"
+    //% group="CCS811"
     //% weight=40
     export function indenvStart(): void {
         TVOC_OK = true
@@ -242,7 +206,7 @@ namespace SmartScience {
      * Set TVOC and CO2 baseline (Baseline should be a decimal value)
      * @param value  , eg: 33915
      */
-    //% group="CO2 and TVOC Sensor (CCS811)"
+    //% group="CCS811"
     //% blockId=CCS811_setBaseline block="set CO2 and TVOC baseline|%value value"
     //% weight=39
     export function setBaseline(value: number): void {
@@ -256,7 +220,7 @@ namespace SmartScience {
     /**
     * Read estimated CO2
     */
-    //% group="CO2 and TVOC Sensor (CCS811)"
+    //% group="CCS811"
     //% blockId="indenvgeteCO2" block="Value of CO2"
     //% weight=38
     export function indenvgeteCO2(): number {
@@ -281,7 +245,7 @@ namespace SmartScience {
     /**
     * Read Total VOC
     */
-    //% group="CO2 and TVOC Sensor (CCS811)"
+    //% group="CCS811"
     //% blockId="indenvgetTVOC" block="Value of TVOC"
     //% weight=37
     export function indenvgetTVOC(): number {
@@ -303,6 +267,7 @@ namespace SmartScience {
         //basic.pause(200)
         return (pins.i2cReadNumber(90, NumberFormat.UInt32BE, false) % 65536)
     }
+    //----------------------------------------
 
     //SD Card
     //-----------------------------------------
@@ -386,7 +351,26 @@ namespace SmartScience {
         }
 
     }
+    //------------------SD card---------------------------------------------
+    //------------------BH1750----------------------------------------------
 
+    let BH1750_I2C_ADDR = 35;
+    pins.i2cWriteNumber(BH1750_I2C_ADDR, 0x11, NumberFormat.UInt8BE); //turn on bh1750
+
+    /**
+    * get light intensity value from bh1750
+    */
+    //% blockId="readBH1750" block="value of light intensity(Lx) from BH1750"
+    //% group="BH1750"
+    export function getIntensity(): number {
+        let raw_value = Math.idiv(pins.i2cReadNumber(BH1750_I2C_ADDR, NumberFormat.UInt16BE) * 5, 6);
+
+
+
+        return raw_value;
+    }
+
+    //------------------BH1750----------------------------------------------
     //--------BME280--------------------------------------------------
 
     // BME280 Addresses
