@@ -28,8 +28,8 @@ namespace SmartScience {
         100
     ]
 
-    //PH Sensor
-    //----------------------------------------------------------------------------
+
+    //---PH Sensor-----------------------------------------------------------------
 
     let ph_value = ""
     //% blockId="readPH"
@@ -77,10 +77,8 @@ namespace SmartScience {
         ph_value_number = (sensorarray[5] * 5 * 10 * 35 / 1024) + offset
         return ph_value_number
     }
-
-    //Laser Dust Sensor (FS00202) pm2.5
-    //-------------------------------------------------------------------------
-
+    //---PH Sensor-----------------------------------------------------------------
+    //----Laser Dust Sensor (FS00202) pm2.5------------------------------------------------
     export enum PmMenu {
         //% block="PM1.0"
         PM1 = 0,
@@ -115,11 +113,8 @@ namespace SmartScience {
         }
         return data[pmType]
     }
-
-
-
-    // gas
-    //----------------------------------------------------------------------------
+    //----Laser Dust Sensor (FS00202) pm2.5------------------------------------------------
+    //---gas----------------------------------------------------------------------
     /**
     * get Towngas value
     * @param MQ5pin describe parameter here, eg: AnalogPin.P0
@@ -133,9 +128,8 @@ namespace SmartScience {
         if (Val_map < 0) { Val_map = 0 }
         return Val_map
     }
-
-    // CO2 and TVOC Sensor (CCS811)
-    //----------------------------------------------------------------------------
+    //---gas----------------------------------------------------------------------
+    //--CO2 and TVOC Sensor (CCS811)----------------------------------------------------
     let TVOC_OK = true
     /* CO2*/
     function indenvGasStatus(): number {
@@ -267,10 +261,8 @@ namespace SmartScience {
         //basic.pause(200)
         return (pins.i2cReadNumber(90, NumberFormat.UInt32BE, false) % 65536)
     }
-    //----------------------------------------
-
-    //SD Card
-    //-----------------------------------------
+    //--CO2 and TVOC Sensor (CCS811)------------------------------------------------
+    //----SD Card--------------------------------------------------------
 
     /**
      * Init the iotbit
@@ -364,9 +356,6 @@ namespace SmartScience {
     //% group="BH1750"
     export function getIntensity(): number {
         let raw_value = Math.idiv(pins.i2cReadNumber(BH1750_I2C_ADDR, NumberFormat.UInt16BE) * 5, 6);
-
-
-
         return raw_value;
     }
 
