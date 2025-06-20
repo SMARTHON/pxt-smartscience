@@ -2,7 +2,7 @@
  * Sensors blocks
  *  Science expansion module for Micro:bit.
  */
-//% weight=97 color=#333300 block="Science" icon="\uf0c3"
+//% weight=97 color=#333300 block="SmartScience" icon="\uf0c3"
 namespace SmartScience {
     let NTC_table = [
         999, 997, 995, 993, 991,   // -40  -  -36
@@ -32,57 +32,37 @@ namespace SmartScience {
         115, 112, 109, 106, 103,   //  80  -  84
         100
     ]
+    //------------------BH1750----------------------------------------------
 
+    let BH1750_I2C_ADDR = 35;
+    pins.i2cWriteNumber(BH1750_I2C_ADDR, 0x11, NumberFormat.UInt8BE); //turn on bh1750
 
-    //---PH Sensor-----------------------------------------------------------------
-
-    let ph_value = ""
-    //% blockId="readPH"
-    //% block="Read PH value at %pin"
-    //% weight=80 
-    //% group="PH"
-    export function readPH(pin: AnalogPin): string {
-        let sensorarray: number[] = []
-        for (let i = 0; i < 10; i++) {
-            sensorarray.push(pins.analogReadPin(AnalogPin.P0))
-            basic.pause(10)
-        }
-        sensorarray.sort((n1, n2) => n1 - n2);
-        for (let value of sensorarray) {
-            serial.writeLine(value.toString())
-        }
-        ph_value = (sensorarray[5] * 5 * 10 * 35 / 1024).toString()
-        serial.writeLine("===========")
-        if (ph_value.length == 3) {
-            serial.writeLine("PH: " + ph_value.substr(0, 1) + "." + ph_value.substr(1, ph_value.length))
-            return ph_value.substr(0, 1) + "." + ph_value.substr(1, ph_value.length)
-        } else {
-            serial.writeLine("PH: " + ph_value.substr(0, 2) + "." + ph_value.substr(2, ph_value.length))
-            return ph_value.substr(0, 2) + "." + ph_value.substr(2, ph_value.length)
-        }
+    /**
+    * get light intensity value from bh1750
+    */
+    //% blockId="readBH1750" block="value of light intensity(Lx) from BH1750"
+    export function getIntensity(): number {
+        let raw_value = Math.idiv(pins.i2cReadNumber(BH1750_I2C_ADDR, NumberFormat.UInt16BE) * 5, 6);
+        return raw_value;
     }
 
-    let ph_value_number = 0
-    //% blockId="readPHNumber"
-    //% block="Read PH value (x100) pin %ports| offset %offset"
-    //% weight=70 group="PH"
-    export function readPhNumber(ports: AnalogPin, offset: number): number {
+    //------------------BH1750----------------------------------------------
 
-        let temp = 0;
-        temp = ports
-        let sensorarray: number[] = []
-        for (let i = 0; i < 10; i++) {
-            sensorarray.push(pins.analogReadPin(temp))
-            basic.pause(10)
-        }
-        sensorarray.sort((n1, n2) => n1 - n2);
-        for (let value of sensorarray) {
-            serial.writeLine(value.toString())
-        }
-        ph_value_number = (sensorarray[5] * 5 * 10 * 35 / 1024) + offset
-        return ph_value_number
+    //---gas----------------------------------------------------------------------
+    /**
+    * get Towngas value
+    * @param MQ5pin describe parameter here, eg: AnalogPin.P0
+    */
+    //% blockId="readTownGasValue" block="value of MQ5 Town Gas sensor at pin %MQ5pin"
+    //% weight=56
+    export function ReadTownGasValue(MQ5pin: AnalogPin): number {
+        let Val = pins.analogReadPin(MQ5pin)
+        let Val_map = pins.map(Val, 80, 1023, 0, 100)
+        if (Val_map < 0) { Val_map = 0 }
+        return Val_map
     }
-    //---PH Sensor-----------------------------------------------------------------
+    //---gas----------------------------------------------------------------------
+
     //----Laser Dust Sensor (FS00202) pm2.5------------------------------------------------
     export enum PmMenu {
         //% block="PM1.0"
@@ -99,7 +79,6 @@ namespace SmartScience {
       * Read PM1.0, PM2.5 & PM10
       */
 
-    //% group="Air sensor"
     //% blockId="readLaserDustSensor" 
     //% block="Get %pmType (ug/m3) at I2C"
     //% weight=15
@@ -119,252 +98,6 @@ namespace SmartScience {
         return data[pmType]
     }
     //----Laser Dust Sensor (FS00202) pm2.5------------------------------------------------
-    //---gas----------------------------------------------------------------------
-    /**
-    * get Towngas value
-    * @param MQ5pin describe parameter here, eg: AnalogPin.P0
-    */
-    //% group="Air sensor"
-    //% blockId="readTownGasValue" block="value of MQ5 Town Gas sensor at pin %MQ5pin"
-    //% weight=56
-    export function ReadTownGasValue(MQ5pin: AnalogPin): number {
-        let Val = pins.analogReadPin(MQ5pin)
-        let Val_map = pins.map(Val, 80, 1023, 0, 100)
-        if (Val_map < 0) { Val_map = 0 }
-        return Val_map
-    }
-    //---gas----------------------------------------------------------------------
-    //--CO2 and TVOC Sensor (CCS811)----------------------------------------------------
-    let TVOC_OK = true
-    /* CO2*/
-    function indenvGasStatus(): number {
-        //pins.setPull(DigitalPin.P19, PinPullMode.PullUp)
-        //pins.setPull(DigitalPin.P20, PinPullMode.PullUp)
-        //basic.pause(200)
-        pins.i2cWriteNumber(90, 0, NumberFormat.UInt8LE, true)
-        //basic.pause(200)
-        let GasStatus = pins.i2cReadNumber(90, NumberFormat.UInt8LE, false)
-        //basic.pause(200)
-        return GasStatus
-    }
-
-    function indenvGasReady(): boolean {
-        if (TVOC_OK != true) {
-            return false
-        }
-        //pins.setPull(DigitalPin.P19, PinPullMode.PullUp)
-        //pins.setPull(DigitalPin.P20, PinPullMode.PullUp)
-        //basic.pause(200)
-        pins.i2cWriteNumber(90, 0, NumberFormat.UInt8LE, true)
-        //basic.pause(200)
-        if ((pins.i2cReadNumber(90, NumberFormat.UInt8LE, false) % 16) != 8) {
-            return false
-        }
-        return true
-    }
-    /**
-    * CO2 and TVOC Sensor (CCS811) Start
-    */
-    //% blockId="indenvStart" block="CCS811 Start"
-    //% group="CCS811"
-    //% weight=40
-    export function indenvStart(): void {
-        TVOC_OK = true
-        //pins.setPull(DigitalPin.P19, PinPullMode.PullUp)
-        //pins.setPull(DigitalPin.P20, PinPullMode.PullUp)
-        //basic.pause(200)
-        //basic.pause(200)
-        /* CJMCU-8118 CCS811 addr 0x5A reg 0x20 Read Device ID = 0x81 */
-        pins.i2cWriteNumber(90, 32, NumberFormat.UInt8LE, true)
-        //basic.pause(200)
-        if (pins.i2cReadNumber(90, NumberFormat.UInt8LE, false) != 129) {
-            TVOC_OK = false
-        }
-        basic.pause(200)
-        /* CJMCU-8118 AppStart CCS811 addr 0x5A register 0xF4 */
-        pins.i2cWriteNumber(90, 244, NumberFormat.UInt8LE, false)
-        //basic.pause(200)
-        /* CJMCU-8118 CCS811 Driving Mode 1 addr 0x5A register 0x01 0x0110 */
-        pins.i2cWriteNumber(90, 272, NumberFormat.UInt16BE, false)
-        basic.pause(200)
-        /* CJMCU-8118 CCS811 Status addr 0x5A register 0x00 return 1 byte */
-        pins.i2cWriteNumber(90, 0, NumberFormat.UInt8LE, true)
-        //basic.pause(200)
-        if (pins.i2cReadNumber(90, NumberFormat.UInt8LE, false) % 2 != 0) {
-            TVOC_OK = false
-        }
-        basic.pause(200)
-        pins.i2cWriteNumber(90, 0, NumberFormat.UInt8LE, true)
-        //basic.pause(200)
-        if (Math.idiv(pins.i2cReadNumber(90, NumberFormat.UInt8LE, false), 16) != 9) {
-            TVOC_OK = false
-        }
-        basic.pause(200)
-    }
-    /**
-     * Set TVOC and CO2 baseline (Baseline should be a decimal value)
-     * @param value  , eg: 33915
-     */
-    //% group="CCS811"
-    //% blockId=CCS811_setBaseline block="set CO2 and TVOC baseline|%value value"
-    //% weight=39
-    export function setBaseline(value: number): void {
-        let buffer: Buffer = pins.createBuffer(3);
-        buffer[0] = 0x20;
-        buffer[1] = value >> 8 & 0xff;
-        buffer[2] = value & 0xff;
-        pins.i2cWriteBuffer(90, buffer);
-
-    }
-    /**
-    * Read estimated CO2
-    */
-    //% group="CCS811"
-    //% blockId="indenvgeteCO2" block="Value of CO2"
-    //% weight=38
-    export function indenvgeteCO2(): number {
-
-        let i
-
-        i = 0
-
-        while (indenvGasReady() != true) {
-            basic.pause(200)
-            i = i + 1
-            if (i >= 10)
-                return -1;
-        }
-        //pins.setPull(DigitalPin.P19, PinPullMode.PullUp)
-        //pins.setPull(DigitalPin.P20, PinPullMode.PullUp)
-        //basic.pause(200)
-        pins.i2cWriteNumber(90, 2, NumberFormat.UInt8LE, true)
-        //basic.pause(200)
-        return pins.i2cReadNumber(90, NumberFormat.UInt16BE, false)
-    }
-    /**
-    * Read Total VOC
-    */
-    //% group="CCS811"
-    //% blockId="indenvgetTVOC" block="Value of TVOC"
-    //% weight=37
-    export function indenvgetTVOC(): number {
-
-        let i
-
-        i = 0
-
-        while (indenvGasReady() != true) {
-            basic.pause(200)
-            i = i + 1
-            if (i >= 10)
-                return -1;
-        }
-        //pins.setPull(DigitalPin.P19, PinPullMode.PullUp)
-        //pins.setPull(DigitalPin.P20, PinPullMode.PullUp)
-        //basic.pause(200)
-        pins.i2cWriteNumber(90, 2, NumberFormat.UInt8LE, true)
-        //basic.pause(200)
-        return (pins.i2cReadNumber(90, NumberFormat.UInt32BE, false) % 65536)
-    }
-    //--CO2 and TVOC Sensor (CCS811)------------------------------------------------
-    //----SD Card--------------------------------------------------------
-
-    /**
-     * Init the iotbit
-     * @param txpin describe parameter here, eg: SerialPin.P8
-     * @param rxpin describe parameter here, eg: SerialPin.P16
-     */
-    //%blockId= InitializeSDcard
-    //%block="Initialize SD Card TX %tx_pin RX %rx_pin"
-    //%subcategory=SD Card
-    //% weight=140
-
-    export function InitializeSDcard(txpin: SerialPin, rxpin: SerialPin): void {
-        serial.redirect(txpin, rxpin, BaudRate.BaudRate9600);
-        serial.setTxBufferSize(128)
-        serial.setRxBufferSize(128)
-    }
-
-    //%blockId= SetHeader
-    //%block="Create CSV File Header* |field1 string%field1||field2 string%field2|field3 string%field3|field4 string%field4|field5 string%field5"
-    //%subcategory=SD Card
-    //% weight=139
-    export function SetHeader(field1: string = null, field2: string = null, field3: string = null, field4: string = null, field5: string = null): void {
-        if (field1 != null && field2 != null && field3 != null && field4 != null && field5 != null) {
-            let header = field1 + ',' + field2 + ',' + field3 + ',' + field4 + ',' + field5
-            serial.writeLine(header)
-        }
-        else if (field1 != null && field2 != null && field3 != null && field4 != null && field5 == null) {
-            let header = field1 + ',' + field2 + ',' + field3 + ',' + field4
-            serial.writeLine(header)
-        }
-        else if (field1 != null && field2 != null && field3 != null && field4 == null && field5 == null) {
-            let header = field1 + ',' + field2 + ',' + field3
-            serial.writeLine(header)
-        }
-        else if (field1 != null && field2 != null && field3 == null && field4 == null && field5 == null) {
-            let header = field1 + ',' + field2
-            serial.writeLine(header)
-        }
-        else if (field1 != null && field2 == null && field3 == null && field4 == null && field5 == null) {
-            let header = field1
-            serial.writeLine(header)
-        }
-        else if (field1 == null && field2 == null && field3 == null && field4 == null && field5 == null) {
-            let header = null
-            serial.writeLine(header)
-        }
-
-    }
-
-    //%blockId= SetRow
-    //%block="Log the data to CSV File* |field1 value%field1||field2 value%field2|field3 value%field3|field4 value%field4|field5 value%field5"
-    //%subcategory=SD Card
-    //% weight=138
-    export function SetRow(field1: number = null, field2: number = null, field3: number = null, field4: number = null, field5: number = null): void {
-        if (field1 != null && field2 != null && field3 != null && field4 != null && field5 != null) {
-            let row = field1 + ',' + field2 + ',' + field3 + ',' + field4 + ',' + field5
-            serial.writeLine(row)
-        }
-        else if (field1 != null && field2 != null && field3 != null && field4 != null && field5 == null) {
-            let row = field1 + ',' + field2 + ',' + field3 + ',' + field4
-            serial.writeLine(row)
-        }
-        else if (field1 != null && field2 != null && field3 != null && field4 == null && field5 == null) {
-            let row = field1 + ',' + field2 + ',' + field3
-            serial.writeLine(row)
-        }
-        else if (field1 != null && field2 != null && field3 == null && field4 == null && field5 == null) {
-            let row = field1 + ',' + field2
-            serial.writeLine(row)
-        }
-        else if (field1 != null && field2 == null && field3 == null && field4 == null && field5 == null) {
-            let row = field1.toString()
-            serial.writeLine(row)
-        }
-        else if (field1 == null && field2 == null && field3 == null && field4 == null && field5 == null) {
-            let row = null
-            serial.writeLine(row)
-        }
-
-    }
-    //------------------SD card---------------------------------------------
-    //------------------BH1750----------------------------------------------
-
-    let BH1750_I2C_ADDR = 35;
-    pins.i2cWriteNumber(BH1750_I2C_ADDR, 0x11, NumberFormat.UInt8BE); //turn on bh1750
-
-    /**
-    * get light intensity value from bh1750
-    */
-    //% blockId="readBH1750" block="value of light intensity(Lx) from BH1750"
-    //% group="Air sensor"
-    export function getIntensity(): number {
-        let raw_value = Math.idiv(pins.i2cReadNumber(BH1750_I2C_ADDR, NumberFormat.UInt16BE) * 5, 6);
-        return raw_value;
-    }
-
-    //------------------BH1750----------------------------------------------
     //--------BME280--------------------------------------------------
 
     // BME280 Addresses
@@ -541,4 +274,268 @@ namespace SmartScience {
     }
 
     //------------------BME280----------------------------------------------
+    //---PH Sensor-----------------------------------------------------------------
+
+    let ph_value = ""
+    //% blockId="readPH"
+    //% block="Read PH value at %pin"
+    //% weight=80 
+    //% group="PH Sensor"
+    export function readPH(pin: AnalogPin): string {
+        let sensorarray: number[] = []
+        for (let i = 0; i < 10; i++) {
+            sensorarray.push(pins.analogReadPin(AnalogPin.P0))
+            basic.pause(10)
+        }
+        sensorarray.sort((n1, n2) => n1 - n2);
+        for (let value of sensorarray) {
+            serial.writeLine(value.toString())
+        }
+        ph_value = (sensorarray[5] * 5 * 10 * 35 / 1024).toString()
+        serial.writeLine("===========")
+        if (ph_value.length == 3) {
+            serial.writeLine("PH: " + ph_value.substr(0, 1) + "." + ph_value.substr(1, ph_value.length))
+            return ph_value.substr(0, 1) + "." + ph_value.substr(1, ph_value.length)
+        } else {
+            serial.writeLine("PH: " + ph_value.substr(0, 2) + "." + ph_value.substr(2, ph_value.length))
+            return ph_value.substr(0, 2) + "." + ph_value.substr(2, ph_value.length)
+        }
+    }
+
+    let ph_value_number = 0
+    //% blockId="readPHNumber"
+    //% block="Read PH value (x100) pin %ports| offset %offset"
+    //% weight=70 group="PH Sensor"
+    export function readPhNumber(ports: AnalogPin, offset: number): number {
+
+        let temp = 0;
+        temp = ports
+        let sensorarray: number[] = []
+        for (let i = 0; i < 10; i++) {
+            sensorarray.push(pins.analogReadPin(temp))
+            basic.pause(10)
+        }
+        sensorarray.sort((n1, n2) => n1 - n2);
+        for (let value of sensorarray) {
+            serial.writeLine(value.toString())
+        }
+        ph_value_number = (sensorarray[5] * 5 * 10 * 35 / 1024) + offset
+        return ph_value_number
+    }
+    //---PH Sensor-----------------------------------------------------------------
+    //--CO2 and TVOC Sensor (CCS811)----------------------------------------------------
+    let TVOC_OK = true
+    /* CO2*/
+    function indenvGasStatus(): number {
+        //pins.setPull(DigitalPin.P19, PinPullMode.PullUp)
+        //pins.setPull(DigitalPin.P20, PinPullMode.PullUp)
+        //basic.pause(200)
+        pins.i2cWriteNumber(90, 0, NumberFormat.UInt8LE, true)
+        //basic.pause(200)
+        let GasStatus = pins.i2cReadNumber(90, NumberFormat.UInt8LE, false)
+        //basic.pause(200)
+        return GasStatus
+    }
+
+    function indenvGasReady(): boolean {
+        if (TVOC_OK != true) {
+            return false
+        }
+        //pins.setPull(DigitalPin.P19, PinPullMode.PullUp)
+        //pins.setPull(DigitalPin.P20, PinPullMode.PullUp)
+        //basic.pause(200)
+        pins.i2cWriteNumber(90, 0, NumberFormat.UInt8LE, true)
+        //basic.pause(200)
+        if ((pins.i2cReadNumber(90, NumberFormat.UInt8LE, false) % 16) != 8) {
+            return false
+        }
+        return true
+    }
+    /**
+    * CO2 and TVOC Sensor (CCS811) Start
+    */
+    //% blockId="indenvStart" block="CCS811 Start"
+    //% group="Co2(CCS811)"
+    //% weight=40
+    export function indenvStart(): void {
+        TVOC_OK = true
+        //pins.setPull(DigitalPin.P19, PinPullMode.PullUp)
+        //pins.setPull(DigitalPin.P20, PinPullMode.PullUp)
+        //basic.pause(200)
+        //basic.pause(200)
+        /* CJMCU-8118 CCS811 addr 0x5A reg 0x20 Read Device ID = 0x81 */
+        pins.i2cWriteNumber(90, 32, NumberFormat.UInt8LE, true)
+        //basic.pause(200)
+        if (pins.i2cReadNumber(90, NumberFormat.UInt8LE, false) != 129) {
+            TVOC_OK = false
+        }
+        basic.pause(200)
+        /* CJMCU-8118 AppStart CCS811 addr 0x5A register 0xF4 */
+        pins.i2cWriteNumber(90, 244, NumberFormat.UInt8LE, false)
+        //basic.pause(200)
+        /* CJMCU-8118 CCS811 Driving Mode 1 addr 0x5A register 0x01 0x0110 */
+        pins.i2cWriteNumber(90, 272, NumberFormat.UInt16BE, false)
+        basic.pause(200)
+        /* CJMCU-8118 CCS811 Status addr 0x5A register 0x00 return 1 byte */
+        pins.i2cWriteNumber(90, 0, NumberFormat.UInt8LE, true)
+        //basic.pause(200)
+        if (pins.i2cReadNumber(90, NumberFormat.UInt8LE, false) % 2 != 0) {
+            TVOC_OK = false
+        }
+        basic.pause(200)
+        pins.i2cWriteNumber(90, 0, NumberFormat.UInt8LE, true)
+        //basic.pause(200)
+        if (Math.idiv(pins.i2cReadNumber(90, NumberFormat.UInt8LE, false), 16) != 9) {
+            TVOC_OK = false
+        }
+        basic.pause(200)
+    }
+    /**
+     * Set TVOC and CO2 baseline (Baseline should be a decimal value)
+     * @param value  , eg: 33915
+     */
+    //% group="Co2(CCS811)"
+    //% blockId=CCS811_setBaseline block="set CO2 and TVOC baseline|%value value"
+    //% weight=39
+    export function setBaseline(value: number): void {
+        let buffer: Buffer = pins.createBuffer(3);
+        buffer[0] = 0x20;
+        buffer[1] = value >> 8 & 0xff;
+        buffer[2] = value & 0xff;
+        pins.i2cWriteBuffer(90, buffer);
+
+    }
+    /**
+    * Read estimated CO2
+    */
+    //% group="Co2(CCS811)"
+    //% blockId="indenvgeteCO2" block="Value of CO2"
+    //% weight=38
+    export function indenvgeteCO2(): number {
+
+        let i
+
+        i = 0
+
+        while (indenvGasReady() != true) {
+            basic.pause(200)
+            i = i + 1
+            if (i >= 10)
+                return -1;
+        }
+        //pins.setPull(DigitalPin.P19, PinPullMode.PullUp)
+        //pins.setPull(DigitalPin.P20, PinPullMode.PullUp)
+        //basic.pause(200)
+        pins.i2cWriteNumber(90, 2, NumberFormat.UInt8LE, true)
+        //basic.pause(200)
+        return pins.i2cReadNumber(90, NumberFormat.UInt16BE, false)
+    }
+    /**
+    * Read Total VOC
+    */
+    //% group="Co2(CCS811)"
+    //% blockId="indenvgetTVOC" block="Value of TVOC"
+    //% weight=37
+    export function indenvgetTVOC(): number {
+
+        let i
+
+        i = 0
+
+        while (indenvGasReady() != true) {
+            basic.pause(200)
+            i = i + 1
+            if (i >= 10)
+                return -1;
+        }
+        //pins.setPull(DigitalPin.P19, PinPullMode.PullUp)
+        //pins.setPull(DigitalPin.P20, PinPullMode.PullUp)
+        //basic.pause(200)
+        pins.i2cWriteNumber(90, 2, NumberFormat.UInt8LE, true)
+        //basic.pause(200)
+        return (pins.i2cReadNumber(90, NumberFormat.UInt32BE, false) % 65536)
+    }
+    //--CO2 and TVOC Sensor (CCS811)------------------------------------------------
+    //----SD Card--------------------------------------------------------
+
+    /**
+     * Init the iotbit
+     * @param txpin describe parameter here, eg: SerialPin.P8
+     * @param rxpin describe parameter here, eg: SerialPin.P16
+     */
+    //%blockId= InitializeSDcard
+    //%block="Initialize SD Card TX %tx_pin RX %rx_pin"
+    //%subcategory=SD Card
+    //% weight=140
+
+    export function InitializeSDcard(txpin: SerialPin, rxpin: SerialPin): void {
+        serial.redirect(txpin, rxpin, BaudRate.BaudRate9600);
+        serial.setTxBufferSize(128)
+        serial.setRxBufferSize(128)
+    }
+
+    //%blockId= SetHeader
+    //%block="Create CSV File Header* |field1 string%field1||field2 string%field2|field3 string%field3|field4 string%field4|field5 string%field5"
+    //%subcategory=SD Card
+    //% weight=139
+    export function SetHeader(field1: string = null, field2: string = null, field3: string = null, field4: string = null, field5: string = null): void {
+        if (field1 != null && field2 != null && field3 != null && field4 != null && field5 != null) {
+            let header = field1 + ',' + field2 + ',' + field3 + ',' + field4 + ',' + field5
+            serial.writeLine(header)
+        }
+        else if (field1 != null && field2 != null && field3 != null && field4 != null && field5 == null) {
+            let header = field1 + ',' + field2 + ',' + field3 + ',' + field4
+            serial.writeLine(header)
+        }
+        else if (field1 != null && field2 != null && field3 != null && field4 == null && field5 == null) {
+            let header = field1 + ',' + field2 + ',' + field3
+            serial.writeLine(header)
+        }
+        else if (field1 != null && field2 != null && field3 == null && field4 == null && field5 == null) {
+            let header = field1 + ',' + field2
+            serial.writeLine(header)
+        }
+        else if (field1 != null && field2 == null && field3 == null && field4 == null && field5 == null) {
+            let header = field1
+            serial.writeLine(header)
+        }
+        else if (field1 == null && field2 == null && field3 == null && field4 == null && field5 == null) {
+            let header = null
+            serial.writeLine(header)
+        }
+
+    }
+
+    //%blockId= SetRow
+    //%block="Log the data to CSV File* |field1 value%field1||field2 value%field2|field3 value%field3|field4 value%field4|field5 value%field5"
+    //%subcategory=SD Card
+    //% weight=138
+    export function SetRow(field1: number = null, field2: number = null, field3: number = null, field4: number = null, field5: number = null): void {
+        if (field1 != null && field2 != null && field3 != null && field4 != null && field5 != null) {
+            let row = field1 + ',' + field2 + ',' + field3 + ',' + field4 + ',' + field5
+            serial.writeLine(row)
+        }
+        else if (field1 != null && field2 != null && field3 != null && field4 != null && field5 == null) {
+            let row = field1 + ',' + field2 + ',' + field3 + ',' + field4
+            serial.writeLine(row)
+        }
+        else if (field1 != null && field2 != null && field3 != null && field4 == null && field5 == null) {
+            let row = field1 + ',' + field2 + ',' + field3
+            serial.writeLine(row)
+        }
+        else if (field1 != null && field2 != null && field3 == null && field4 == null && field5 == null) {
+            let row = field1 + ',' + field2
+            serial.writeLine(row)
+        }
+        else if (field1 != null && field2 == null && field3 == null && field4 == null && field5 == null) {
+            let row = field1.toString()
+            serial.writeLine(row)
+        }
+        else if (field1 == null && field2 == null && field3 == null && field4 == null && field5 == null) {
+            let row = null
+            serial.writeLine(row)
+        }
+
+    }
+    //------------------SD card---------------------------------------------
 }
