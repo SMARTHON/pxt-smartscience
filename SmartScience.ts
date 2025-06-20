@@ -1,3 +1,8 @@
+/**
+ * Sensors blocks
+ *  Science expansion module for Micro:bit.
+ */
+//% weight=97 color=#333300 block="Science" icon="\uf5dc"
 namespace SmartScience {
     let NTC_table = [
         999, 997, 995, 993, 991,   // -40  -  -36
@@ -94,7 +99,7 @@ namespace SmartScience {
       * Read PM1.0, PM2.5 & PM10
       */
 
-    //% group="Pm2.5"
+    //% group="Air sensor"
     //% blockId="readLaserDustSensor" 
     //% block="Get %pmType (ug/m3) at I2C"
     //% weight=15
@@ -119,7 +124,7 @@ namespace SmartScience {
     * get Towngas value
     * @param MQ5pin describe parameter here, eg: AnalogPin.P0
     */
-    //% group="Gas"
+    //% group="Air sensor"
     //% blockId="readTownGasValue" block="value of MQ5 Town Gas sensor at pin %MQ5pin"
     //% weight=56
     export function ReadTownGasValue(MQ5pin: AnalogPin): number {
@@ -353,7 +358,7 @@ namespace SmartScience {
     * get light intensity value from bh1750
     */
     //% blockId="readBH1750" block="value of light intensity(Lx) from BH1750"
-    //% group="BH1750"
+    //% group="Air sensor"
     export function getIntensity(): number {
         let raw_value = Math.idiv(pins.i2cReadNumber(BH1750_I2C_ADDR, NumberFormat.UInt16BE) * 5, 6);
         return raw_value;
