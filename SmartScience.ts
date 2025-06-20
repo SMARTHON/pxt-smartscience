@@ -2,7 +2,7 @@
  * Sensors blocks
  *  Science expansion module for Micro:bit.
  */
-//% weight=97 color=#333300 block="Science" icon="\uf5dc"
+//% weight=97 color=#333300 block="Science" icon="\uf0c3"
 namespace SmartScience {
     let NTC_table = [
         999, 997, 995, 993, 991,   // -40  -  -36
