@@ -40,7 +40,8 @@ namespace SmartScience {
     /**
     * get light intensity value from bh1750
     */
-    //% blockId="readBH1750" block="value of light intensity(Lx) from BH1750"
+    //% blockId="readBH1750" 
+    //% block="value of light intensity(Lx) from BH1750"
     export function getIntensity(): number {
         let raw_value = Math.idiv(pins.i2cReadNumber(BH1750_I2C_ADDR, NumberFormat.UInt16BE) * 5, 6);
         return raw_value;
@@ -53,7 +54,8 @@ namespace SmartScience {
     * get Towngas value
     * @param MQ5pin describe parameter here, eg: AnalogPin.P0
     */
-    //% blockId="readTownGasValue" block="value of MQ5 Town Gas sensor at pin %MQ5pin"
+    //% blockId="readTownGasValue" 
+    //% block="value of MQ5 Town Gas sensor at pin %MQ5pin"
     //% weight=56
     export function ReadTownGasValue(MQ5pin: AnalogPin): number {
         let Val = pins.analogReadPin(MQ5pin)

@@ -1,7 +1,18 @@
 {
     "SmartScience.getIntensity|block" : "獲得BH1750光強感測器的光強度",
     "SmartScience.ReadTownGasValue|block" : "獲得MQ5天然氣感測器的數值在pin腳 %MQ5pin",
+    
+    "SmartScience.PmMenu.PM1|block" : "PM1.0",
+    "SmartScience.PmMenu.PM25|block" : "PM2.5",
+    "SmartScience.PmMenu.PM10|block" : "PM10",
+    
     "SmartScience.PMdata|block" : "獲得  %pmType (ug/m3)在I2C",
+
+    "SmartScience.BME280_state.BME280_temperature_C|block" : "溫度(℃)",
+    "SmartScience.BME280_state.BME280_humidity|block" : "濕度(0~100)",
+    "SmartScience.BME280_state.BME280_pressure|block" : "氣壓(hPa)",
+    "SmartScience.BME280_state.BME280_altitude|block" : "altitude(M)",
+
     "SmartScience.octopus_BME280|block" : "獲得BME280感測器的數值 %state",
     "SmartScience.readPH|block" : "獲得PH數據在 %pin",
     "SmartScience.readPhNumber|block" : "讀取 PH 數據 (x100) pin %ports| offset %offset",
