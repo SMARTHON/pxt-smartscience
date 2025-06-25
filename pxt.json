@@ -10,7 +10,8 @@
     },
     "files": [
         "README.md",
-        "SmartScience.ts"
+        "SmartScience.ts",
+        "_locales/zh-TW/pxt-SmartScience-strings.json"
     ],
     "testFiles": [
         "tests.ts"
