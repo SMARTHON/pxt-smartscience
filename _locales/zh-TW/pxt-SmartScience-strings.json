@@ -26,6 +26,7 @@
 
 
     "SmartScience|block" : "智慧科學",
+    "{id:category}SmartScience": "SmartScience",
     "{id:subcategory}SD Card" : "SD 卡",
     "{id:group}Temperature, Humidity and Pressure Sensor (BME280)" : "溫度、濕度和壓力感測器 (BME280)",
     "{id:group}PH Sensor" : "PH 感測器",
