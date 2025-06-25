@@ -11,8 +11,8 @@
     "files": [
         "README.md",
         "SmartScience.ts",
-        "_locales/zh-TW/pxt-SmartScience-strings.json",
-        "_locales/zh-CN/pxt-SmartScience-strings.json"
+        "_locales/zh-TW/SmartScience-strings.json",
+        "_locales/zh-CN/SmartScience-strings.json"
     ],
     "testFiles": [
         "tests.ts"
