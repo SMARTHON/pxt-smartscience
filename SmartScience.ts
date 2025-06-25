@@ -247,7 +247,8 @@ namespace SmartScience {
     }
 
     //% group="Temperature, Humidity and Pressure Sensor (BME280)"
-    //% blockId="BME280value" block="value of BME280 %state"
+    //% blockId="BME280value" 
+    //% block="value of BME280 %state"
     //% weight=20
     export function octopus_BME280(state: BME280_state): number {
         switch (state) {

@@ -1,7 +1,22 @@
 {
-    
+    "SmartScience.getIntensity|block" : "獲得BH1750光強感測器的光強度",
+    "SmartScience.ReadTownGasValue|block" : "獲得MQ5天然氣感測器的數值在pin腳 %MQ5pin",
+    "SmartScience.PMdata|block" : "獲得  %pmType (ug/m3)在I2C",
+    "SmartScience.octopus_BME280|block" : "獲得BME280感測器的數值 %state",
+    "SmartScience.readPH|block" : "獲得PH數據在 %pin",
+    "SmartScience.readPhNumber|block" : "讀取 PH 數據 (x100) pin %ports| offset %offset",
+    "SmartScience.indenvStart|block" : "CCS811 開始環境監測",
+    "SmartScience.setBaseline|block" : "設定 CO2 和 TVOC 基線值 | %value value",
+    "SmartScience.indenvgeteCO2|block" : "CO2 數據",
+    "SmartScience.indenvgetTVOC|block" : "TVOC 數據",
+    "SmartScience.InitializeSDcard|block" : "初始化 SD 卡 TX %tx_pin RX %rx_pin",
+    "SmartScience.SetHeader|block" : "創建 CSV 檔案標頭* |field1 string%field1||field2 string%field2|field3 string%field3|field4 string%field4|field5 string%field5",
+    "SmartScience.SetRow|block" : "寫入數據到CSV 檔案 |field1 string%field1||field2 string%field2|field3 string%field3|field4 string%field4|field5 string%field5",
+
+
     "SmartScience|block"  : "智慧科學",
-    "{id:Temperature, Humidity and Pressure Sensor (BME280)|block}" : "溫度、濕度和壓力感測器 (BME280)",
-    "{id:PH Sensor|block}" : "PH 感測器",
-    "{id:Co2(CCS811)|block}" : "二氧化碳 (CCS811)"
+    "{id:subcategory}SD Card" : "SD 卡",
+    "{id:group}Temperature, Humidity and Pressure Sensor (BME280)" : "溫度、濕度和壓力感測器 (BME280)",
+    "{id:group}PH Sensor" : "PH 感測器",
+    "{id:group}Co2(CCS811)" : "二氧化碳 (CCS811)"
 }
