@@ -1,2 +1,34 @@
 {
+    "SmartScience.getIntensity|block" : "获得BH1750光强感测器的光强度",
+    "SmartScience.ReadTownGasValue|block" : "获得MQ5天然气感测器的数值在pin脚 %MQ5pin",
+    
+    "SmartScience.PmMenu.PM1|block" : "PM1.0",
+    "SmartScience.PmMenu.PM25|block" : "PM2.5",
+    "SmartScience.PmMenu.PM10|block" : "PM10",
+    
+    "SmartScience.PMdata|block" : "获得  %pmType (ug/m3)在I2C",
+
+    "SmartScience.BME280_state.BME280_temperature_C|block" : "温度(℃)",
+    "SmartScience.BME280_state.BME280_humidity|block" : "湿度(0~100)",
+    "SmartScience.BME280_state.BME280_pressure|block" : "气压(hPa)",
+    "SmartScience.BME280_state.BME280_altitude|block" : "altitude(M)",
+
+    "SmartScience.octopus_BME280|block" : "获得BME280感测器的数值 %state",
+    "SmartScience.readPH|block" : "获得PH数据在 %pin",
+    "SmartScience.readPhNumber|block" : "读取 PH 数据 (x100) pin %ports| offset %offset",
+    "SmartScience.indenvStart|block" : "CCS811 开始环境监测",
+    "SmartScience.setBaseline|block" : "设定 CO2 和 TVOC 基线值 | %value value",
+    "SmartScience.indenvgeteCO2|block" : "CO2 数据",
+    "SmartScience.indenvgetTVOC|block" : "TVOC 数据",
+    "SmartScience.InitializeSDcard|block" : "初始化 SD 卡 TX %tx_pin RX %rx_pin",
+    "SmartScience.SetHeader|block" : "创建 CSV 档案标头* |field1 string%field1||field2 string%field2|field3 string%field3|field4 string%field4|field5 string%field5",
+    "SmartScience.SetRow|block" : "写入数据到CSV 档案 |field1 string%field1||field2 string%field2|field3 string%field3|field4 string%field4|field5 string%field5",
+
+
+    "SmartScience|block" : "智慧科学",
+    "{id:category}SmartScience": "SmartScience",
+    "{id:subcategory}SD Card" : "SD 卡",
+    "{id:group}Temperature, Humidity and Pressure Sensor (BME280)" : "温度、湿度和压力感测器 (BME280)",
+    "{id:group}PH Sensor" : "PH 感测器",
+    "{id:group}Co2(CCS811)" : "二氧化碳 (CCS811)"
 }
