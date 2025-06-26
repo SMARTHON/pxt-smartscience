@@ -25,7 +25,7 @@
     "SmartScience.SetRow|block" : "写入数据到CSV 档案 |field1 string%field1||field2 string%field2|field3 string%field3|field4 string%field4|field5 string%field5",
 
 
-    "SmartScience|block" : "智慧科学",
+    "SmartScience|block" : "SmartScience",
     "{id:category}SmartScience": "SmartScience",
     "{id:subcategory}SD Card" : "SD 卡",
     "{id:group}Temperature, Humidity and Pressure Sensor (BME280)" : "温度、湿度和压力感测器 (BME280)",
