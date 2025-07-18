@@ -431,6 +431,163 @@ namespace SmartScience {
         return (pins.i2cReadNumber(90, NumberFormat.UInt32BE, false) % 65536)
     }
     //--CO2 and TVOC Sensor (CCS811)------------------------------------------------
+    //---HX711----------------------------------------------
+    let PD_SCK = DigitalPin.P2; // 時鐘引腳
+    let DOUT = DigitalPin.P1;   // 數據引腳
+    let GAIN: number = 0;       // 增益設置
+    let OFFSET: number = 0;
+    let CALIBRATION_FACTOR = 125
+    let zeroOffset = 8429250; // 無負載時的數據
+    let scaleFactor = -426.96; // 根據 135g 計算的比例因子
+    /**
+     * 設置數據引腳 (DOUT)
+     * 設置時鐘引腳 (SCK)
+     * @param pinPD_SCK describe parameter here, eg: SerialPin.P14
+     * @param pinDOUT describe parameter here, eg: SerialPin.P15
+     */
+    //% blockId="set_pin" block="HX711 set ClockPin %pinPD_SCK and DataPin %pinDOUT"
+    //% weight=100
+    //% group="HX711"
+    export function SetPIN_DOUT(pinPD_SCK: DigitalPin, pinDOUT: DigitalPin): void {
+        DOUT = pinDOUT;
+        PD_SCK = pinPD_SCK;
+        set_gain(128); // 初始化 HX711，設置預設增益為 128
+        let sum = 0;
+        for (let i = 0; i < 5; i++) {
+            sum += read();
+        }
+        OFFSET = sum / 5;
+    }
+
+    /**
+     * 檢查 HX711 是否準備好
+     */
+    export function is_ready(): boolean {
+        return pins.digitalReadPin(DOUT) == 0;
+    }
+
+    /**
+     * 設置增益 (128, 64 或 32)
+     * @param gain 增益值
+     */
+    export function set_gain(gain: number): void {
+        switch (gain) {
+            case 128: // 通道 A，增益 128
+                GAIN = 1;
+                break;
+            case 64:  // 通道 A，增益 64
+                GAIN = 3;
+                break;
+            case 32:  // 通道 B，增益 32
+                GAIN = 2;
+                break;
+        }
+        pins.digitalWritePin(PD_SCK, 0);
+        read();
+    }
+
+    /**
+     * 模擬 shiftIn 讀取 8 位數據
+     * @param bitOrder 位元順序 (0: LSBFIRST, 1: MSBFIRST)
+     */
+    export function shiftInSlow(bitOrder: number): number {
+        let value: number = 0;
+        for (let i = 0; i < 8; ++i) {
+            pins.digitalWritePin(PD_SCK, 1);
+            control.waitMicros(1);
+            if (bitOrder == 0) {
+                value |= pins.digitalReadPin(DOUT) << i;
+            } else {
+                value |= pins.digitalReadPin(DOUT) << (7 - i);
+            }
+            pins.digitalWritePin(PD_SCK, 0);
+            control.waitMicros(1);
+        }
+        return value;
+    }
+
+    /**
+     * 從 HX711 讀取 24 位原始數據
+     */
+    //% blockId="HX711_READ" block="read HX711 data"
+    //% group="HX711"
+    //% weight=80
+    function read(): number {
+        // 等待 HX711 準備好
+        let value: number = 0;
+        while (!is_ready()) {
+            basic.pause(0);
+        }
+
+        // 讀取 24 位數據
+        let data: number[] = [0, 0, 0];
+        let filler: number = 0x00;
+        data[2] = shiftInSlow(1); // MSBFIRST
+        data[1] = shiftInSlow(1);
+        data[0] = shiftInSlow(1);
+
+        // 設置下一次讀取的通道和增益
+        for (let i = 0; i < GAIN; i++) {
+            pins.digitalWritePin(PD_SCK, 1);
+            control.waitMicros(1);
+            pins.digitalWritePin(PD_SCK, 0);
+            control.waitMicros(1);
+        }
+
+        // 處理 MSB 並構建 32 位簽名整數
+        if (data[2] & 0x80) {
+            filler = 0xFF;
+        }
+        data[2] = data[2] ^ 0x80; // 移除簽名位
+        value = (filler << 24) | (data[2] << 16) | (data[1] << 8) | data[0];
+        if (value < -8388608) {
+            value += 16777216; // 校正負數溢出
+        }
+        return value
+    }
+
+    export enum weight_kg {
+        //% blockId=HX711_5kg
+        //% block="5kg"
+        kg_5 = 0,
+        //% blockId=HX711_10kg
+        //% block="10kg"
+        kg_10 = 1,
+        //% blockId=HX711_20kg
+        //% block="20kg"
+        kg_15 = 2,
+    }
+
+    //% blockId="HX711_GET_UNITS" block="get value %uni"
+    //% weight=80
+    //% group="HX711"
+    export function get_units(uni: weight_kg): number {
+        let valor: number = 0
+        //let valor_string: string = ""
+        //let ceros: string = ""
+        switch (uni) {
+            case 0:
+                valor = (read() - OFFSET) / scaleFactor;
+                break;
+            case 1:
+                valor = (read() - OFFSET) / CALIBRATION_FACTOR;
+                break;
+            case 2:
+                valor = (read() - OFFSET) / CALIBRATION_FACTOR;
+                break;
+        }
+
+        /* if (Math.abs(Math.round((valor - Math.trunc(valor)) * 100)).toString().length == 0) {
+            ceros = "00"
+         } else if (Math.abs(Math.round((valor - Math.trunc(valor)) * 100)).toString().length == 1) {
+            ceros = "0"
+         }
+    valor_string = "" + Math.trunc(valor).toString() + "." + ceros + Math.abs(Math.round((valor - Math.trunc(valor)) * 100)).toString()
+     */
+        return Math.round(valor * 100) / 100
+    }
+
+    //---HX711----------------------------------------------
     //----SD Card--------------------------------------------------------
 
     /**
