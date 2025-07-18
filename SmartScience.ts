@@ -442,8 +442,8 @@ namespace SmartScience {
     /**
      * 設置數據引腳 (DOUT)
      * 設置時鐘引腳 (SCK)
-     * @param pinPD_SCK describe parameter here, eg: SerialPin.P14
-     * @param pinDOUT describe parameter here, eg: SerialPin.P15
+     * @param pinPD_SCK describe parameter here, eg: SerialPin.P12
+     * @param pinDOUT describe parameter here, eg: SerialPin.P13
      */
     //% blockId="set_pin" block="HX711 set ClockPin %pinPD_SCK and DataPin %pinDOUT"
     //% weight=100
