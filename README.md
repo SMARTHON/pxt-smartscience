@@ -6,4 +6,5 @@ includ the sensor function:
 4. Digital Light 
 5. Air quality 
 6. Town gas sensor
-7. SD Card  
+7. SD Card
+8. Weight sensor
