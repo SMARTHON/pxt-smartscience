@@ -254,7 +254,7 @@ namespace SmartScience {
     let ph_value_number = 0
     //% blockId="readPHNumber"
     //% block="Read PH value pin %ports| offset %offset"
-    //% weight=70 group="Water"
+    //% weight=70 group="PH sensor"
     export function readPhNumber(ports: AnalogPin, offset: number): number {
 
         let temp = 0;
@@ -279,7 +279,7 @@ namespace SmartScience {
     let pH_Value =0
     //% blockId="readVoltage"
     //% block="Read Voltage value pin %ports"
-    //% weight=70 group="Water"
+    //% weight=70 group="PH sensor"
     export function ShowVoltage(ports: AnalogPin): number {
 
         pH_Value = pins.analogReadPin(ports);
