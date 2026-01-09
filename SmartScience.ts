@@ -44,7 +44,13 @@ namespace SmartScience {
         //% block="PM2.5"
         PM25 = 1,
         //% block="PM10"
-        PM10 = 2
+        PM10 = 2,
+        //% block="pm1bz_vaule"
+        pm1bz_vaule = 3,
+        //% block="pm25bz_vaule"
+        pm25bz_vaule = 4,
+        //% block="pm10bz_vaule"
+        pm10bz_vaule = 5
     }
 
     const PM_ADDR = 0x50; // sensor I2C address
@@ -57,19 +63,46 @@ namespace SmartScience {
     //% block="Get %pmType (ug/m3) at I2C"
     //% weight=15
     export function PMdata(pmType: PmMenu): number {
-        pins.i2cWriteNumber(PM_ADDR, 0x00, NumberFormat.Int8LE);
-        let buffer = pins.i2cReadBuffer(PM_ADDR, 32);
-        let sum = 0
-        for (let i = 0; i < 30; i++) {
-            sum += buffer[i]
+        let validData = [0, 0, 0, 0, 0, 0]; // 預設 0
+
+        for (let retry = 0; retry < 3; retry++) {  // 重試最多 3 次
+            let buffer = pins.i2cReadBuffer(PM_ADDR, 32, false);
+
+            if (buffer.length != 32) {
+                basic.pause(20);
+                continue;
+            }
+
+            // 計算 checksum (前 30 字節 sum == buffer[30-31])
+            let sum = 0;
+            for (let i = 0; i < 30; i++) {
+                sum += buffer[i];
+            }
+
+            let checksum = (buffer[30] << 8) | buffer[31];
+
+            if (sum == checksum) {
+                // 直接取值 (high byte << 8 | low byte)，單位 μg/m³
+                validData[0] = (buffer[0x04] << 8) | buffer[0x05];  // PM1.0 標準
+                validData[1] = (buffer[0x06] << 8) | buffer[0x07];  // PM2.5 標準
+                validData[2] = (buffer[0x08] << 8) | buffer[0x09];  // PM10 標準
+                validData[3] = (buffer[0x0A] << 8) | buffer[0x0B];  // PM1.0 大氣
+                validData[4] = (buffer[0x0C] << 8) | buffer[0x0D];  // PM2.5 大氣
+                validData[5] = (buffer[0x0E] << 8) | buffer[0x0F];  // PM10 大氣
+
+                // 防負值（理論上不會，但保險）
+                for (let i = 0; i < 6; i++) {
+                    if (validData[i] < 0) validData[i] = 0;
+                }
+
+                return validData[pmType];
+            }
+
+            basic.pause(20); // 重試前小延遲
         }
-        let data = [-1, -1, -1]
-        if (sum == ((buffer[30] << 8) | buffer[31])) {
-            data[0] = Math.round(((buffer[0x04] << 8) | buffer[0x05]) / 2.002)
-            data[1] = Math.round(((buffer[0x06] << 8) | buffer[0x07]) / 2.093)
-            data[2] = Math.round(((buffer[0x08] << 8) | buffer[0x09]) / 1.841)
-        }
-        return data[pmType]
+
+        // 若所有重試失敗，返回 -1 表示錯誤
+        return -1;
     }
     //----Laser Dust Sensor (FS00202) pm2.5------------------------------------------------
     //--------BME280--------------------------------------------------
@@ -250,33 +283,55 @@ namespace SmartScience {
 
     //------------------BME280----------------------------------------------
     //---PH Sensor-----------------------------------------------------------------
+    // PH value calculation and calibration
+    let ADC_P1 = 508    // PH 1.68
+    let PH_P1 = 1.68
+    let ADC_P2 = 386    // PH 4.0
+    let PH_P2 = 4
+    let ADC_P3 = 233    // PH 6.86
+    let PH_P3 = 6.86
+    let ADC_P4 = 111    // PH 9.18
+    let PH_P4 = 9.18
+    let alpha = 0.15
+    let currentPH = 0
+    let currentRawAdc = 0
+    let filteredADC = 0
 
-    let ph_value_number = 0
     //% blockId="readPHNumber"
     //% block="Read PH value pin %ports| offset %offset"
     //% weight=70 group="PH sensor"
     export function readPhNumber(ports: AnalogPin, offset: number): number {
 
-        let temp = 0;
-        temp = ports
-        let sensorarray: number[] = []
-        let avgValue: number = 0;
-        for (let i = 0; i < 10; i++) {
-            sensorarray.push(pins.analogReadPin(temp))
-            basic.pause(10)
+        let sum = 0
+        // 1. 取得本次採樣平均值 (採樣 30 次以穩定數據)
+        for (let index = 0; index < 30; index++) {
+            sum += pins.analogReadPin(ports)
+            basic.pause(2)
         }
-        sensorarray.sort((n1, n2) => n1 - n2);
-        for (let i = 2; i < 8; i++) {
-            avgValue += sensorarray[i];
-        }
+        currentRawAdc = sum / 30
 
-        avgValue = avgValue / 6
-        ph_value_number = ((avgValue * 5 / 1024 )*10.623 + offset -23.813)
-        return ph_value_number 
+        // 2. EMA 濾波 (指數移動平均，讓數值平滑)
+        filteredADC = alpha * currentRawAdc + (1 - alpha) * filteredADC
+
+        // 3. 計算 PH (分段線性邏輯)
+        if (filteredADC >= ADC_P1) {
+            // 極酸區間
+            currentPH = PH_P1 + (filteredADC - ADC_P1) * (PH_P2 - PH_P1) / (ADC_P2 - ADC_P1)
+        } else if (filteredADC >= ADC_P2) {
+            // 1.68 ~ 4.0 區間
+            currentPH = PH_P1 + (filteredADC - ADC_P1) * (PH_P2 - PH_P1) / (ADC_P2 - ADC_P1)
+        } else if (filteredADC >= ADC_P3) {
+            // 4.0 ~ 6.86 區間
+            currentPH = PH_P2 + (filteredADC - ADC_P2) * (PH_P3 - PH_P2) / (ADC_P3 - ADC_P2)
+        } else {
+            // 6.86 ~ 9.18 區間
+            currentPH = PH_P3 + (filteredADC - ADC_P3) * (PH_P4 - PH_P3) / (ADC_P4 - ADC_P3)
+        }
+        return Math.round(currentPH * 100) / 100
     }
 
-    let Voltage =0
-    let pH_Value =0
+    let Voltage = 0
+    let pH_Value = 0
     //% blockId="readVoltage"
     //% block="Read Voltage value pin %ports"
     //% weight=70 group="PH sensor"
