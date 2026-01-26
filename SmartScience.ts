@@ -476,8 +476,8 @@ namespace SmartScience {
     }
     //--CO2 and TVOC Sensor (CCS811)------------------------------------------------
     //---HX711----------------------------------------------
-    let PD_SCK = DigitalPin.P2; // 時鐘引腳
-    let DOUT = DigitalPin.P1;   // 數據引腳
+    let PD_SCK = DigitalPin.P12; // 時鐘引腳
+    let DOUT = DigitalPin.P13;   // 數據引腳
     let GAIN: number = 0;       // 增益設置
     let OFFSET: number = 0;
     let CALIBRATION_FACTOR = 125
@@ -486,16 +486,16 @@ namespace SmartScience {
 
     /**
      * Init the weight sensor
-     * @param pinSCK describe parameter here, eg: SerialPin.P12
-     * @param pinOUT describe parameter here, eg: SerialPin.P13
+     * @param pinSCK describe parameter here, eg: DigitalPin.P12
+     * @param pinOUT describe parameter here, eg: DigitalPin.P13
      */
     //% blockId="set_pin" 
     //% block="HX711 set ClockPin %pinSCK and DataPin %pinOUT"
     //% weight=100
     //% group="HX711"
     export function SetPIN_DOUT(pinSCK: DigitalPin, pinOUT: DigitalPin): void {
-        DOUT = pinOUT;
         PD_SCK = pinSCK;
+        DOUT = pinOUT;
         set_gain(128);
         let sum = 0;
         for (let i = 0; i < 5; i++) {
