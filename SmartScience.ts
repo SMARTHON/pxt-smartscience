@@ -483,19 +483,20 @@ namespace SmartScience {
     let CALIBRATION_FACTOR = 125
     let zeroOffset = 8429250; // 無負載時的數據
     let scaleFactor = -426.96; // 根據 135g 計算的比例因子
+
     /**
-     * 設置數據引腳 (DOUT)
-     * 設置時鐘引腳 (SCK)
-     * @param pinPD_SCK describe parameter here, eg: SerialPin.P12
-     * @param pinDOUT describe parameter here, eg: SerialPin.P13
+     * Init the weight sensor
+     * @param pinSCK describe parameter here, eg: SerialPin.P12
+     * @param pinOUT describe parameter here, eg: SerialPin.P13
      */
-    //% blockId="set_pin" block="HX711 set ClockPin %pinPD_SCK and DataPin %pinDOUT"
+    //% blockId="set_pin" 
+    //% block="HX711 set ClockPin %pinSCK and DataPin %pinOUT"
     //% weight=100
     //% group="HX711"
-    export function SetPIN_DOUT(pinPD_SCK: DigitalPin, pinDOUT: DigitalPin): void {
-        DOUT = pinDOUT;
-        PD_SCK = pinPD_SCK;
-        set_gain(128); // 初始化 HX711，設置預設增益為 128
+    export function SetPIN_DOUT(pinSCK: DigitalPin, pinOUT: DigitalPin): void {
+        DOUT = pinOUT;
+        PD_SCK = pinSCK;
+        set_gain(128);
         let sum = 0;
         for (let i = 0; i < 5; i++) {
             sum += read();
