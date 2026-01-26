@@ -531,7 +531,6 @@ namespace SmartScience {
     }
 
     /**
-     * 模擬 shiftIn 讀取 8 位數據
      * @param bitOrder 位元順序 (0: LSBFIRST, 1: MSBFIRST)
      */
     export function shiftInSlow(bitOrder: number): number {
@@ -636,8 +635,8 @@ namespace SmartScience {
 
     /**
      * Init the iotbit
-     * @param txpin describe parameter here, eg: SerialPin.P8
-     * @param rxpin describe parameter here, eg: SerialPin.P16
+     * @param txpin describe parameter here, eg: SerialPin.P16
+     * @param rxpin describe parameter here, eg: SerialPin.P8
      */
     //%blockId= InitializeSDcard
     //%block="Initialize SD Card TX %tx_pin RX %rx_pin"
