@@ -331,21 +331,10 @@ namespace SmartScience {
         }
 
         PHValue = Math.max(0, Math.min(14, PHValue))
-
-        return PHValue
+        
+        return Math.round(PHValue * 100) / 100
     }
 
-    let Voltage = 0
-    let pH_Value = 0
-    //% blockId="readVoltage"
-    //% block="Read Voltage value pin %ports"
-    //% weight=70 group="PH sensor"
-    export function ShowVoltage(ports: AnalogPin): number {
-
-        let adc = pins.analogReadPin(ports);
-        adc = adc * (5.0 / 1023.0);
-        return adc
-    }
     //---PH Sensor-----------------------------------------------------------------
     //--CO2 and TVOC Sensor (CCS811)----------------------------------------------------
     let TVOC_OK = true
