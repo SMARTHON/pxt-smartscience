@@ -284,50 +284,55 @@ namespace SmartScience {
     //------------------BME280----------------------------------------------
     //---PH Sensor-----------------------------------------------------------------
     // PH value calculation and calibration
-    let ADC_P1 = 508    // PH 1.68
-    let PH_P1 = 1.68
-    let ADC_P2 = 386    // PH 4.0
-    let PH_P2 = 4
-    let ADC_P3 = 233    // PH 6.86
-    let PH_P3 = 6.86
-    let ADC_P4 = 111    // PH 9.18
-    let PH_P4 = 9.18
-    let alpha = 0.15
-    let currentPH = 0
-    let currentRawAdc = 0
-    let filteredADC = 0
+    
+    let PHValue = 0
+    let PHRough = 0
 
     //% blockId="readPHNumber"
     //% block="Read PH value pin %ports| offset %offset"
     //% weight=70 group="PH sensor"
     export function readPhNumber(ports: AnalogPin, offset: number): number {
+        let adc_avg = 0
+        const segments = [
+            { minPH: 0.0, maxPH: 4.00, offset: 867.828, slope: 54.9569 },  // 1.68-4
+            { minPH: 4.00, maxPH: 6.86, offset: 853.594, slope: 51.3986 },  // 4-6.86
+            { minPH: 6.86, maxPH: 9.18, offset: 814.431, slope: 45.6897 },  // 6.86-9.18
+            { minPH: 9.18, maxPH: 10.00, offset: 1173.061, slope: 84.7561 }, // 9.18-10
+            { minPH: 10.00, maxPH: 14.0, offset: 839.786, slope: 51.4286 }   // 10-12.45
+        ]
+        // 平均濾波 + 異常排除
+        let sum_adc = 0
 
-        let sum = 0
-        // 1. 取得本次採樣平均值 (採樣 30 次以穩定數據)
-        for (let index = 0; index < 30; index++) {
-            sum += pins.analogReadPin(ports)
-            basic.pause(2)
+        for (let i = 0; i < 25; i++) {  // 增加到 25 次，更穩
+            let adc = pins.analogReadPin(ports)
+            sum_adc += adc
+            basic.pause(8)  // 總取樣時間約 200ms
         }
-        currentRawAdc = sum / 30
+        adc_avg = sum_adc / 25
+        PHRough = (864.63 - adc_avg) / 53.051
 
-        // 2. EMA 濾波 (指數移動平均，讓數值平滑)
-        filteredADC = alpha * currentRawAdc + (1 - alpha) * filteredADC
-
-        // 3. 計算 PH (分段線性邏輯)
-        if (filteredADC >= ADC_P1) {
-            // 極酸區間
-            currentPH = PH_P1 + (filteredADC - ADC_P1) * (PH_P2 - PH_P1) / (ADC_P2 - ADC_P1)
-        } else if (filteredADC >= ADC_P2) {
-            // 1.68 ~ 4.0 區間
-            currentPH = PH_P1 + (filteredADC - ADC_P1) * (PH_P2 - PH_P1) / (ADC_P2 - ADC_P1)
-        } else if (filteredADC >= ADC_P3) {
-            // 4.0 ~ 6.86 區間
-            currentPH = PH_P2 + (filteredADC - ADC_P2) * (PH_P3 - PH_P2) / (ADC_P3 - ADC_P2)
-        } else {
-            // 6.86 ~ 9.18 區間
-            currentPH = PH_P3 + (filteredADC - ADC_P3) * (PH_P4 - PH_P3) / (ADC_P4 - ADC_P3)
+        let found = false
+        for (let seg of segments) {
+            if (PHRough >= seg.minPH && PHRough < seg.maxPH) {
+                PHValue = (seg.offset - adc_avg) / seg.slope
+                found = true
+                break
+            }
         }
-        return Math.round(currentPH * 100) / 100
+
+        if (!found) {
+            if (adc_avg > 650) {  // 低 pH，高 ADC
+                PHValue = (867.828 - adc_avg) / 54.9569
+            } else if (adc_avg < 250) {  // 高 pH，低 ADC
+                PHValue = (839.786 - adc_avg) / 51.4286
+            } else {
+                PHValue = PHRough  // 最後備用
+            }
+        }
+
+        PHValue = Math.max(0, Math.min(14, PHValue))
+
+        return PHValue
     }
 
     let Voltage = 0
@@ -337,9 +342,9 @@ namespace SmartScience {
     //% weight=70 group="PH sensor"
     export function ShowVoltage(ports: AnalogPin): number {
 
-        pH_Value = pins.analogReadPin(ports);
-        Voltage = pH_Value * (5.0 / 1023.0);
-        return Voltage
+        let adc = pins.analogReadPin(ports);
+        adc = adc * (5.0 / 1023.0);
+        return adc
     }
     //---PH Sensor-----------------------------------------------------------------
     //--CO2 and TVOC Sensor (CCS811)----------------------------------------------------
