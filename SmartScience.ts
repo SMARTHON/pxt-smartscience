@@ -284,7 +284,7 @@ namespace SmartScience {
     //------------------BME280----------------------------------------------
     //---PH Sensor-----------------------------------------------------------------
     // PH value calculation and calibration
-    
+
     let PHValue = 0
     let PHRough = 0
 
@@ -331,7 +331,7 @@ namespace SmartScience {
         }
 
         PHValue = Math.max(0, Math.min(14, PHValue))
-        
+
         return Math.round(PHValue * 100) / 100
     }
 
@@ -476,7 +476,7 @@ namespace SmartScience {
     let OFFSET: number = 0;
     let CALIBRATION_FACTOR = 125
     let zeroOffset = 8429250; // 無負載時的數據
-    let scaleFactor = -426.96; // 根據 135g 計算的比例因子
+    let scaleFactor = 426.96; // 根據 135g 計算的比例因子
 
     /**
      * Init the weight sensor
@@ -484,25 +484,40 @@ namespace SmartScience {
      * @param pinOUT describe parameter here, eg: DigitalPin.P13
      */
     //% blockId="set_pin" 
-    //% block="HX711 set ClockPin %pinSCK and DataPin %pinOUT"
+    //% block="HX711 set ClockPin %pinSCK and DataPin %pinOUT || average readings %times"
     //% weight=100
     //% group="HX711"
-    export function SetPIN_DOUT(pinSCK: DigitalPin, pinOUT: DigitalPin): void {
+    export function initialize(pinSCK: DigitalPin, pinOUT: DigitalPin, times: number = 20): void {
         PD_SCK = pinSCK;
         DOUT = pinOUT;
+        pins.digitalWritePin(PD_SCK, 0);
         set_gain(128);
+
         let sum = 0;
-        for (let i = 0; i < 5; i++) {
-            sum += read();
+        let count = 0;
+        for (let i = 0; i < times; i++) {
+            let v = read();
+            if (v !== 0) {  // 避免讀到超時的 0
+                sum += v;
+                count++;
+            }
+            basic.pause(10);
         }
-        OFFSET = sum / 5;
+        OFFSET = count > 0 ? sum / count : 0;
     }
 
     /**
      * 檢查 HX711 是否準備好
      */
-    export function is_ready(): boolean {
-        return pins.digitalReadPin(DOUT) == 0;
+    function waitReady(timeoutMs: number = 500): boolean {
+        let start = control.millis()
+        while (pins.digitalReadPin(DOUT) !== 0) {
+            if (control.millis() - start > timeoutMs) {
+                return false
+            }
+            basic.pause(1)
+        }
+        return true
     }
 
     /**
@@ -511,18 +526,18 @@ namespace SmartScience {
      */
     export function set_gain(gain: number): void {
         switch (gain) {
-            case 128: // 通道 A，增益 128
-                GAIN = 1;
-                break;
-            case 64:  // 通道 A，增益 64
-                GAIN = 3;
-                break;
-            case 32:  // 通道 B，增益 32
-                GAIN = 2;
-                break;
+            case 128: GAIN = 1; break;
+            case 64: GAIN = 3; break;
+            case 32: GAIN = 2; break;
+            default: GAIN = 1; return; // 防呆
         }
-        pins.digitalWritePin(PD_SCK, 0);
-        read();
+        // 只送脈衝，不讀資料
+        for (let i = 0; i < GAIN; i++) {
+            pins.digitalWritePin(PD_SCK, 1);
+            control.waitMicros(2);
+            pins.digitalWritePin(PD_SCK, 0);
+            control.waitMicros(2);
+        }
     }
 
     /**
@@ -553,8 +568,8 @@ namespace SmartScience {
     function read(): number {
         // 等待 HX711 準備好
         let value: number = 0;
-        while (!is_ready()) {
-            basic.pause(0);
+        while (!waitReady(300)) {
+            return 0;
         }
 
         // 讀取 24 位數據
@@ -591,9 +606,6 @@ namespace SmartScience {
         //% blockId=HX711_10kg
         //% block="10kg"
         kg_10 = 1,
-        //% blockId=HX711_20kg
-        //% block="20kg"
-        kg_15 = 2,
     }
 
     //% blockId="HX711_GET_UNITS" block="get value %uni"
@@ -601,8 +613,6 @@ namespace SmartScience {
     //% group="HX711"
     export function get_units(uni: weight_kg): number {
         let valor: number = 0
-        //let valor_string: string = ""
-        //let ceros: string = ""
         switch (uni) {
             case 0:
                 valor = (read() - OFFSET) / scaleFactor;
@@ -610,19 +620,8 @@ namespace SmartScience {
             case 1:
                 valor = (read() - OFFSET) / CALIBRATION_FACTOR;
                 break;
-            case 2:
-                valor = (read() - OFFSET) / CALIBRATION_FACTOR;
-                break;
         }
-
-        /* if (Math.abs(Math.round((valor - Math.trunc(valor)) * 100)).toString().length == 0) {
-            ceros = "00"
-         } else if (Math.abs(Math.round((valor - Math.trunc(valor)) * 100)).toString().length == 1) {
-            ceros = "0"
-         }
-    valor_string = "" + Math.trunc(valor).toString() + "." + ceros + Math.abs(Math.round((valor - Math.trunc(valor)) * 100)).toString()
-     */
-        return Math.round(valor * 100) / 100
+        return Math.round(Math.abs(valor) * 100) / 100
     }
 
     //---HX711----------------------------------------------
