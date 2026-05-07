@@ -470,28 +470,41 @@ namespace SmartScience {
     }
     //--CO2 and TVOC Sensor (CCS811)------------------------------------------------
     //---HX711----------------------------------------------
-    let PD_SCK = DigitalPin.P12; // 時鐘引腳
-    let DOUT = DigitalPin.P13;   // 數據引腳
-    let GAIN: number = 0;       // 增益設置
-    let OFFSET: number = 0;
-    let CALIBRATION_FACTOR = 125
-    let zeroOffset = 8429250; // 無負載時的數據
-    let scaleFactor = 426.96; // 根據 135g 計算的比例因子
+    let PD_SCK = DigitalPin.P12; // Clock Pin
+    let DOUT = DigitalPin.P13;   // Data Pin
+    let GAIN: number = 1;        // Gain Setting
+    let offSet: number = 0;      // Zero offset
+
+    // 將常數整理好
+    let calibationFactor_10kg = 125;
+    let scaleFactor_5kg = 414.5;
+
+    export enum weight_kg {
+        //% block="5kg"
+        kg_5 = 0,
+        //% block="10kg"
+        kg_10 = 1,
+    }
 
     /**
-     * Init the weight sensor
+     * Initialize the HX711 weight sensor
      * @param pinSCK describe parameter here, eg: DigitalPin.P12
      * @param pinOUT describe parameter here, eg: DigitalPin.P13
+     * @param times Number of samples for initial tare
      */
-    //% blockId="set_pin" 
-    //% block="HX711 set ClockPin %pinSCK and DataPin %pinOUT || average readings %times"
+    //% blockId="hx711_init" 
+    //% block="initialize sensor HX711 Set CLK %pinSCK DATA %pinOUT || Tare samples %times"
     //% weight=100
     //% group="HX711"
     export function initialize(pinSCK: DigitalPin, pinOUT: DigitalPin, times: number = 20): void {
         PD_SCK = pinSCK;
         DOUT = pinOUT;
+
+        // 建議加上 PullUp 避免引腳懸空時讀取到雜訊
+        pins.setPull(DOUT, PinPullMode.PullUp);
         pins.digitalWritePin(PD_SCK, 0);
-        set_gain(128);
+
+        setGain(128);
 
         let sum = 0;
         let count = 0;
@@ -503,125 +516,96 @@ namespace SmartScience {
             }
             basic.pause(10);
         }
-        OFFSET = count > 0 ? sum / count : 0;
+        offSet = count > 0 ? sum / count : 0;
     }
 
     /**
-     * 檢查 HX711 是否準備好
+     * Check if HX711 is ready
      */
     function waitReady(timeoutMs: number = 500): boolean {
-        let start = control.millis()
+        let start = control.millis();
         while (pins.digitalReadPin(DOUT) !== 0) {
             if (control.millis() - start > timeoutMs) {
-                return false
+                return false;
             }
-            basic.pause(1)
         }
-        return true
+        return true;
     }
 
     /**
-     * 設置增益 (128, 64 或 32)
-     * @param gain 增益值
+     * Set Gain (128, 64, or 32)
      */
-    export function set_gain(gain: number): void {
+    export function setGain(gain: number): void {
         switch (gain) {
             case 128: GAIN = 1; break;
             case 64: GAIN = 3; break;
             case 32: GAIN = 2; break;
             default: GAIN = 1; return; // 防呆
         }
-        // 只送脈衝，不讀資料
-        for (let i = 0; i < GAIN; i++) {
-            pins.digitalWritePin(PD_SCK, 1);
-            control.waitMicros(2);
-            pins.digitalWritePin(PD_SCK, 0);
-            control.waitMicros(2);
-        }
     }
 
     /**
-     * @param bitOrder 位元順序 (0: LSBFIRST, 1: MSBFIRST)
+     * Read 24-bit raw data from HX711
      */
-    export function shiftInSlow(bitOrder: number): number {
-        let value: number = 0;
-        for (let i = 0; i < 8; ++i) {
+    //% blockId="HX711_READ" block="Read HX711 Raw Data"
+    //% group="HX711"
+    //% weight=80
+    export function read(): number {
+        // 等待 HX711 準備好
+        if (!waitReady(300)) {
+            return 0;
+        }
+
+        let value = 0;
+
+        // 讀取 24 位數據 (合併 shiftIn 邏輯，運作更穩定)
+        for (let i = 0; i < 24; i++) {
             pins.digitalWritePin(PD_SCK, 1);
             control.waitMicros(1);
-            if (bitOrder == 0) {
-                value |= pins.digitalReadPin(DOUT) << i;
-            } else {
-                value |= pins.digitalReadPin(DOUT) << (7 - i);
-            }
+            value = (value << 1) | pins.digitalReadPin(DOUT);
             pins.digitalWritePin(PD_SCK, 0);
             control.waitMicros(1);
         }
+
+        // 設置下一次讀取的增益 (送出 1~3 個時鐘脈衝)
+        for (let i = 0; i < GAIN; i++) {
+            pins.digitalWritePin(PD_SCK, 1);
+            control.waitMicros(1);
+            pins.digitalWritePin(PD_SCK, 0);
+            control.waitMicros(1);
+        }
+
+        // 處理 24 位元負數擴展 (Sign Extension)
+        // 這是最標準且不易出錯的做法：如果第 24 位元是 1，則前面補滿 1
+        if (value & 0x800000) {
+            value |= 0xFF000000;
+        }
+
         return value;
     }
 
     /**
-     * 從 HX711 讀取 24 位原始數據
+     * Get calculated weight
      */
-    //% blockId="HX711_READ" block="read HX711 data"
-    //% group="HX711"
-    //% weight=80
-    function read(): number {
-        // 等待 HX711 準備好
-        let value: number = 0;
-        while (!waitReady(300)) {
-            return 0;
-        }
-
-        // 讀取 24 位數據
-        let data: number[] = [0, 0, 0];
-        let filler: number = 0x00;
-        data[2] = shiftInSlow(1); // MSBFIRST
-        data[1] = shiftInSlow(1);
-        data[0] = shiftInSlow(1);
-
-        // 設置下一次讀取的通道和增益
-        for (let i = 0; i < GAIN; i++) {
-            pins.digitalWritePin(PD_SCK, 1);
-            control.waitMicros(1);
-            pins.digitalWritePin(PD_SCK, 0);
-            control.waitMicros(1);
-        }
-
-        // 處理 MSB 並構建 32 位簽名整數
-        if (data[2] & 0x80) {
-            filler = 0xFF;
-        }
-        data[2] = data[2] ^ 0x80; // 移除簽名位
-        value = (filler << 24) | (data[2] << 16) | (data[1] << 8) | data[0];
-        if (value < -8388608) {
-            value += 16777216; // 校正負數溢出
-        }
-        return value
-    }
-
-    export enum weight_kg {
-        //% blockId=HX711_5kg
-        //% block="5kg"
-        kg_5 = 0,
-        //% blockId=HX711_10kg
-        //% block="10kg"
-        kg_10 = 1,
-    }
-
-    //% blockId="HX711_GET_UNITS" block="get value %uni"
-    //% weight=80
+    //% blockId="HX711_GET_UNITS" block="Get Weight Mode %uni"
+    //% weight=90
     //% group="HX711"
     export function get_units(uni: weight_kg): number {
-        let valor: number = 0
+        let rawData = read();
+        if (rawData === 0) return 0; // 防呆，避免回傳因超時讀到的無效值
+
+        let valor: number = 0;
         switch (uni) {
-            case 0:
-                valor = (read() - OFFSET) / scaleFactor;
+            case weight_kg.kg_5: // 5kg 模式
+                valor = (rawData - offSet) / scaleFactor_5kg;
                 break;
-            case 1:
-                valor = (read() - OFFSET) / CALIBRATION_FACTOR;
+            case weight_kg.kg_10: // 10kg 模式
+                valor = (rawData - offSet) / calibationFactor_10kg;
                 break;
         }
-        return Math.round(Math.abs(valor) * 100) / 100
+
+        // 四捨五入到小數點後兩位，並取絕對值避免負數抖動
+        return Math.round(Math.abs(valor) * 100) / 100;
     }
 
     //---HX711----------------------------------------------
