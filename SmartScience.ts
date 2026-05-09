@@ -367,7 +367,8 @@ namespace SmartScience {
     /**
     * CO2 and TVOC Sensor (CCS811) Start
     */
-    //% blockId="indenvStart" block="CCS811 Start"
+    //% blockId="indenvStart" 
+    //% block="CCS811 Start"
     //% group="Co2(CCS811)"
     //% weight=40
     export function indenvStart(): void {
@@ -408,7 +409,8 @@ namespace SmartScience {
      * @param value  , eg: 33915
      */
     //% group="Co2(CCS811)"
-    //% blockId=CCS811_setBaseline block="set CO2 and TVOC baseline|%value value"
+    //% blockId=CCS811_setBaseline 
+    //% block="set CO2 and TVOC baseline|%value value"
     //% weight=39
     export function setBaseline(value: number): void {
         let buffer: Buffer = pins.createBuffer(3);
@@ -447,7 +449,8 @@ namespace SmartScience {
     * Read Total VOC
     */
     //% group="Co2(CCS811)"
-    //% blockId="indenvgetTVOC" block="Value of TVOC"
+    //% blockId="indenvgetTVOC" 
+    //% block="Value of TVOC"
     //% weight=37
     export function indenvgetTVOC(): number {
 
@@ -547,7 +550,8 @@ namespace SmartScience {
     /**
      * Read 24-bit raw data from HX711
      */
-    //% blockId="HX711_READ" block="Read HX711 Raw Data"
+    //% blockId="HX711_READ"
+    //% block="Read HX711 Raw Data"
     //% group="HX711"
     //% weight=80
     export function read(): number {
@@ -587,7 +591,8 @@ namespace SmartScience {
     /**
      * Get calculated weight
      */
-    //% blockId="HX711_GET_UNITS" block="Get Weight Mode %uni"
+    //% blockId="HX711_GET_UNITS" 
+    //% block="Get Weight Mode %uni"
     //% weight=90
     //% group="HX711"
     export function get_units(uni: weight_kg): number {
@@ -606,6 +611,24 @@ namespace SmartScience {
 
         // 四捨五入到小數點後兩位，並取絕對值避免負數抖動
         return Math.round(Math.abs(valor) * 100) / 100;
+    }
+
+    /**
+     * Set the current weight as the zero point (Tare)
+     */
+    //% blockId="hx711_set_zero"
+    //% block="HX711 Set Current Weight to Zero"
+    //% weight=95
+    //% group="HX711"
+    export function setZero(): void {
+        let sum = 0;
+        let samples = 10;
+        for (let i = 0; i < samples; i++) {
+            sum += read();
+            basic.pause(10);
+        }
+        // 更新全域變數 offset，之後讀取的重量就會以此為基準扣除
+        offSet = sum / samples;
     }
 
     //---HX711----------------------------------------------
