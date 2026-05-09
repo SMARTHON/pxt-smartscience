@@ -554,6 +554,7 @@ namespace SmartScience {
     //% block="Read HX711 Raw Data"
     //% group="HX711"
     //% weight=80
+    //% blockHidden=true
     export function read(): number {
         // 等待 HX711 準備好
         if (!waitReady(300)) {
